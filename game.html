@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tayyab Ball Bouncing Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        #header {
+            background: linear-gradient(45deg, #2c3e50, #3498db);
+            padding: 15px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #game-title {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            background: linear-gradient(to right, #ff0, #f80);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        #score-container {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        #timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: calc(100vh - 60px);
+            background: linear-gradient(to bottom, #87CEEB, #B0E0E6);
+        }
+        
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50px;
+        }
+        
+        #ball {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle at 30% 30%, #ff0000, #990000);
+            border-radius: 50%;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        #paddle {
+            position: absolute;
+            width: 100px;
+            height: 20px;
+            background: linear-gradient(to right, #4a90e2, #357abd);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .wall {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 40px;
+            z-index: 12;
+            background-image: repeating-linear-gradient(
+                to bottom,
+                #8b0000 0px,
+                #8b0000 40px,
+                #a52a2a 40px,
+                #a52a2a 80px
+            );
+        }
+        
+        #left-wall {
+            left: 0;
+        }
+        
+        #right-wall {
+            right: 0;
+        }
+        
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <div id="game-title">Tayyab Ball Bouncing Game</div>
+        <div id="score-container">Score: <span id="score">0</span></div>
+        <div id="timer">Time: 00:00</div>
+    </div>
+    <div id="game-container">
+        <div id="left-wall" class="wall"></div>
+        <div id="right-wall" class="wall"></div>
+        <div id="ball"></div>
+        <div id="paddle"></div>
+        <div id="game-over">
+            <h2>Game Over!</h2>
+            <h3 id="score1">Score</h3>
+            <p>Click anywhere to restart</p>
+        </div>
+    </div>
+
+    <script>
+        const ball = document.getElementById('ball');
+        const paddle = document.getElementById('paddle');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        const gameOverScreen = document.getElementById('game-over');
+        const gameContainer = document.getElementById('game-container');  
+
+        let ballX = 100;
+        let ballY = 100;
+        let ballSpeedX = 5;
+        let ballSpeedY = 5;
+        let paddleX = 350;
+        let score = 0;
+        let startTime;
+        let timerInterval;
+        let isGameRunning = true;
+
+        // Initialize paddle position
+        paddle.style.left = paddleX + 'px';
+        paddle.style.bottom = '0px';
+
+        // Create clouds
+        for (let i = 0; i < 5; i++) {
+            const cloud = document.createElement('div');
+            cloud.className = 'cloud';
+            cloud.style.left = Math.random() * window.innerWidth + 'px';
+            cloud.style.top = Math.random() * 200 + 'px';
+            cloud.style.width = Math.random() * 100 + 50 + 'px';
+            cloud.style.height = Math.random() * 40 + 20 + 'px';
+            gameContainer.appendChild(cloud);
+        }
+
+        
+        function showSpeedIndicator(text) {
+            speedIndicator.textContent = text;
+            speedIndicator.style.display = 'block';
+            speedIndicator.style.animation = 'none';
+            speedIndicator.offsetHeight; // Trigger reflow
+            speedIndicator.style.animation = 'fadeOut 1s forwards';
+            setTimeout(() => {
+                speedIndicator.style.display = 'none';
+            }, 1000);
+        }
+        function updateSpeed() {
+            let newSpeedMultiplier = 1;
+            
+            if (score >= 20) {
+                newSpeedMultiplier = 2;
+            } else if (score >= 10) {
+                newSpeedMultiplier = 1.5;
+            }
+
+            if (newSpeedMultiplier !== currentSpeedMultiplier) {
+                currentSpeedMultiplier = newSpeedMultiplier;
+                ballSpeedX = baseSpeedX * currentSpeedMultiplier * Math.sign(ballSpeedX);
+                ballSpeedY = baseSpeedY * currentSpeedMultiplier * Math.sign(ballSpeedY);
+                
+                if (currentSpeedMultiplier === 1.5) {
+                    showSpeedIndicator('Speed 1.5x!');
+                    ball.style.transform = 'scale(0.9)';
+                } else if (currentSpeedMultiplier === 2) {
+                    showSpeedIndicator('Speed 2x!');
+                    ball.style.transform = 'scale(0.8)';
+                }
+            }
+        }
+        function updateTimer() {
+            const currentTime = new Date();
+            const elapsedTime = Math.floor((currentTime - startTime) / 1000);
+            const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+            const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+            timerElement.textContent = `Time: ${minutes}:${seconds}`;
+        }
+
+        function startGame() {
+            isGameRunning = true;
+            score = 0;
+            scoreElement.textContent = score;
+            gameOverScreen.style.display = 'none';
+            ballX = 100;
+            ballY = 100;
+            ballSpeedX = 2;
+            ballSpeedY = 2;
+            startTime = new Date();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function gameOver() {
+            isGameRunning = false;
+            gameOverScreen.style.display = 'block';
+            document.getElementById("score1").innerHTML = `Score : ${score}`;
+            clearInterval(timerInterval);
+        }
+
+        function update() {
+            if (!isGameRunning) return;
+
+            // Update ball position
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+
+            // Wall collisions
+            if (ballX <= 40 || ballX >= window.innerWidth - 60) {
+                ballSpeedX = -ballSpeedX;
+            }
+
+            // Ceiling collision
+            if (ballY <= 0) {
+                ballSpeedY = -ballSpeedY;
+            }
+
+            // Floor collision
+            if (ballY >= window.innerHeight - 80) {
+                gameOver();
+            }
+
+            // Paddle collision
+            if (ballY >= window.innerHeight - 100 &&
+                ballX >= paddleX - 10 &&
+                ballX <= paddleX + 110) {
+                ballSpeedY = -ballSpeedY;
+                score++;
+                scoreElement.textContent = score;
+
+                // Add some randomness to the ball direction
+                ballSpeedX += (Math.random() - 0.5) * 2;
+            }
+
+            // Update ball position
+            ball.style.left = ballX + 'px';
+            ball.style.top = ballY + 'px';
+
+            requestAnimationFrame(update);
+        }
+        
+            
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+
+            if (e.key === 'Enter' && !isGameRunning) {
+                startGame();
+                update();
+                return;
+            }
+            
+            if (!isGameRunning) return;
+
+            if (e.key === 'ArrowLeft' && paddleX > 40) {
+                paddleX -= 40;
+            }
+            if (e.key === 'ArrowRight' && paddleX < window.innerWidth - 140) {
+                paddleX += 40;
+            }
+            paddle.style.left = paddleX + 'px';
+        });
+
+        // Click to restart
+        document.addEventListener('click', () => {
+            if (!isGameRunning) {
+                startGame();
+                update();
+            }
+        });
+
+        // Start the game
+        startGame();
+        update();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (paddleX > window.innerWidth - 140) {
+                paddleX = window.innerWidth - 140;
+                paddle.style.left = paddleX + 'px';
+            }
+        });
+
+
+
+      const abv =   function(){
+
+      }
+
+
+     let a =  () => {
+
+
+     };
+    </script>
+</body>
+</html>
