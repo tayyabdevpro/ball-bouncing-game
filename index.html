@@ -19,7 +19,7 @@
         }
         
         #game-title {
-            font-size: 24px;
+            font-size: 2rem;
             font-weight: bold;
             text-transform: uppercase;
             background: linear-gradient(to right, #ff0, #f80);
@@ -30,14 +30,14 @@
         
         #score-container {
             text-align: center;
-            font-size: 24px;
+            font-size: 1.5rem;
             font-weight: bold;
             color: #fff;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
         
         #timer {
-            font-size: 24px;
+            font-size: 1.5rem;
             font-weight: bold;
             color: #fff;
         }
@@ -47,6 +47,7 @@
             width: 100vw;
             height: calc(100vh - 60px);
             background: linear-gradient(to bottom, #87CEEB, #B0E0E6);
+            overflow: hidden;
         }
         
         .cloud {
@@ -57,8 +58,10 @@
         
         #ball {
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 2.5vw;
+            height: 2.5vw;
+            max-width: 20px;
+            max-height: 20px;
             background: radial-gradient(circle at 30% 30%, #ff0000, #990000);
             border-radius: 50%;
             box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
@@ -66,18 +69,22 @@
         
         #paddle {
             position: absolute;
-            width: 100px;
-            height: 20px;
+            width: 10vw;
+            height: 2vw;
+            max-width: 100px;
+            max-height: 20px;
             background: linear-gradient(to right, #4a90e2, #357abd);
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            margin-bottom: 7px;
         }
         
         .wall {
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 40px;
+            width: 4vw;
+            max-width: 40px;
             z-index: 12;
             background-image: repeating-linear-gradient(
                 to bottom,
@@ -108,6 +115,34 @@
             border-radius: 10px;
             text-align: center;
         }
+
+        @media (max-width: 768px) {
+            #game-title {
+                font-size: 1.5rem;
+            }
+
+            #score-container, #timer {
+                font-size: 1.2rem;
+            }
+
+            #paddle {
+                width: 20vw;
+               
+            }
+
+            #ball {
+                width: 4vw;
+                height: 4vw;
+            }
+
+            .wall {
+                width: 6vw;
+            }
+            #game-container{
+                width: 100%;
+                height: calc(250vh - 60px);
+                            }
+        }
     </style>
 </head>
 <body>
@@ -124,7 +159,7 @@
         <div id="game-over">
             <h2>Game Over!</h2>
             <h3 id="score1">Score</h3>
-            <p>Click anywhere to restart</p>
+            <p>Press Enter or Click anywhere to restart</p>
         </div>
     </div>
 
@@ -136,11 +171,11 @@
         const gameOverScreen = document.getElementById('game-over');
         const gameContainer = document.getElementById('game-container');  
 
-        let ballX = 100;
-        let ballY = 100;
+        let ballX = gameContainer.clientWidth * 0.1;
+        let ballY = gameContainer.clientHeight * 0.1;
         let ballSpeedX = 5;
         let ballSpeedY = 5;
-        let paddleX = 350;
+        let paddleX = gameContainer.clientWidth * 0.5;
         let score = 0;
         let startTime;
         let timerInterval;
@@ -149,6 +184,7 @@
         // Initialize paddle position
         paddle.style.left = paddleX + 'px';
         paddle.style.bottom = '0px';
+        
 
         // Create clouds
         for (let i = 0; i < 5; i++) {
@@ -161,40 +197,6 @@
             gameContainer.appendChild(cloud);
         }
 
-        
-        function showSpeedIndicator(text) {
-            speedIndicator.textContent = text;
-            speedIndicator.style.display = 'block';
-            speedIndicator.style.animation = 'none';
-            speedIndicator.offsetHeight; // Trigger reflow
-            speedIndicator.style.animation = 'fadeOut 1s forwards';
-            setTimeout(() => {
-                speedIndicator.style.display = 'none';
-            }, 1000);
-        }
-        function updateSpeed() {
-            let newSpeedMultiplier = 1;
-            
-            if (score >= 20) {
-                newSpeedMultiplier = 2;
-            } else if (score >= 10) {
-                newSpeedMultiplier = 1.5;
-            }
-
-            if (newSpeedMultiplier !== currentSpeedMultiplier) {
-                currentSpeedMultiplier = newSpeedMultiplier;
-                ballSpeedX = baseSpeedX * currentSpeedMultiplier * Math.sign(ballSpeedX);
-                ballSpeedY = baseSpeedY * currentSpeedMultiplier * Math.sign(ballSpeedY);
-                
-                if (currentSpeedMultiplier === 1.5) {
-                    showSpeedIndicator('Speed 1.5x!');
-                    ball.style.transform = 'scale(0.9)';
-                } else if (currentSpeedMultiplier === 2) {
-                    showSpeedIndicator('Speed 2x!');
-                    ball.style.transform = 'scale(0.8)';
-                }
-            }
-        }
         function updateTimer() {
             const currentTime = new Date();
             const elapsedTime = Math.floor((currentTime - startTime) / 1000);
@@ -208,8 +210,8 @@
             score = 0;
             scoreElement.textContent = score;
             gameOverScreen.style.display = 'none';
-            ballX = 100;
-            ballY = 100;
+            ballX = gameContainer.clientWidth * 0.1;
+            ballY = gameContainer.clientHeight * 0.1;
             ballSpeedX = 2;
             ballSpeedY = 2;
             startTime = new Date();
@@ -232,7 +234,7 @@
             ballY += ballSpeedY;
 
             // Wall collisions
-            if (ballX <= 40 || ballX >= window.innerWidth - 60) {
+            if (ballX <= 40 || ballX >= gameContainer.clientWidth - 60) {
                 ballSpeedX = -ballSpeedX;
             }
 
@@ -242,14 +244,14 @@
             }
 
             // Floor collision
-            if (ballY >= window.innerHeight - 80) {
+            if (ballY >= gameContainer.clientHeight - 30) {
                 gameOver();
             }
 
             // Paddle collision
-            if (ballY >= window.innerHeight - 100 &&
+            if (ballY >= gameContainer.clientHeight - 50 &&
                 ballX >= paddleX - 10 &&
-                ballX <= paddleX + 110) {
+                ballX <= paddleX + paddle.offsetWidth + 10) {
                 ballSpeedY = -ballSpeedY;
                 score++;
                 scoreElement.textContent = score;
@@ -265,7 +267,6 @@
             requestAnimationFrame(update);
         }
         
-            
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
 
@@ -278,10 +279,10 @@
             if (!isGameRunning) return;
 
             if (e.key === 'ArrowLeft' && paddleX > 40) {
-                paddleX -= 40;
+                paddleX -= gameContainer.clientWidth * 0.05;
             }
-            if (e.key === 'ArrowRight' && paddleX < window.innerWidth - 140) {
-                paddleX += 40;
+            if (e.key === 'ArrowRight' && paddleX < gameContainer.clientWidth - paddle.offsetWidth - 40) {
+                paddleX += gameContainer.clientWidth * 0.05;
             }
             paddle.style.left = paddleX + 'px';
         });
@@ -300,23 +301,11 @@
 
         // Handle window resize
         window.addEventListener('resize', () => {
-            if (paddleX > window.innerWidth - 140) {
-                paddleX = window.innerWidth - 140;
+            if (paddleX > gameContainer.clientWidth - paddle.offsetWidth) {
+                paddleX = gameContainer.clientWidth - paddle.offsetWidth;
                 paddle.style.left = paddleX + 'px';
             }
         });
-
-
-
-      const abv =   function(){
-
-      }
-
-
-     let a =  () => {
-
-
-     };
     </script>
 </body>
 </html>
